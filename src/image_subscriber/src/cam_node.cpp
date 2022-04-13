@@ -45,7 +45,7 @@ std::string *CamNode::GetImages(std::string dir) {
     *(&images + image_count) = entry.path();
     if (image_count < 5 - 1) {
       *images = image_count;
-      RCLCPP_INFO(this->get_logger(), "\nImage Count = %s", *image_count);
+      RCLCPP_INFO(this->get_logger(), "\nImage Count = %s", *images);
       break;
     }
   }
