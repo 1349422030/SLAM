@@ -11,8 +11,8 @@ def generate_launch_description():
             name='cam_main',
             parameters=[{
                     'image_base_path': '/home/workspace/Datasets/V1_01_easy',  # /xxx
-                    'image_left_sub_path': '/cam0/data',  # /xxx
-                    'image_right_sub_path': '/cam1/data'  # /xxx
+                    'left_sub_image_path': '/cam0/data',  # /xxx
+                    'right_sub_image_path': '/cam1/data'  # /xxx
             }],
             output="screen",
         )

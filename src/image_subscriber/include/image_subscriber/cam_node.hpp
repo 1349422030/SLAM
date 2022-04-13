@@ -1,27 +1,28 @@
 #ifndef CAM_NODE_HPP
 #define CAM_NODE_HPP
 
+#include <iostream>
 #include <rclcpp/rclcpp.hpp>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/opencv.hpp>
-
-#include <filesystem>
-#include <iostream>
-
-namespace fs = std::filesystem;
+#include <eigen3/Eigen/Dense>
+using namespace std;
 
 class CamNode : public rclcpp::Node {
 public:
   CamNode();
-  void GetImages(std::string dir, int *file_count, std::string *file_list);
+  void GetImages(string dir, int *file_count, string *file_list);
+  void ImagePub();
+
+  void SingleLKFlow(int *image_count, string *left_image_list,
+                    string *right_image_list);
+  void StereoDepth(int *image_count, string *left_image_list,
+                          string *right_image_list);
 
 private:
   void SysInit();
 
-  std::string left_image_path_;
-  std::string right_image_path_;
+  string left_image_path_;
+  string right_image_path_;
 };
 
 #endif

@@ -26,7 +26,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 set(OpenCV_DIR /home/workspace/Library/opencv_build) # Directory include OpenCVConfig.cmake
 find_package(OpenCV REQUIRED
-  # PATHS /opt/OpenCV4/ # Path OpenCV installed
+  PATHS /opt/OpenCV4/ # Path OpenCV installed
 )
 
 if(BUILD_TESTING)
