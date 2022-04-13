@@ -2,8 +2,17 @@
 
 CamNode::CamNode() : Node("parameter_node") {
   SysInit();
-  std::string *left_images = GetImages(image_left_path_);
-  RCLCPP_INFO(this->get_logger(), "\nImages Name = %s", &left_images);
+
+  std::string *left_image_list = new std::string[10000];
+  std::string *right_image_list = new std::string[10000];
+  int left_image_count = 0;
+  int right_image_count = 0;
+  GetImages(left_image_path_, &left_image_count, left_image_list);
+  GetImages(left_image_path_, &right_image_count, right_image_list);
+
+
+
+
 }
 
 void CamNode::SysInit() {
@@ -12,42 +21,35 @@ void CamNode::SysInit() {
 
   // Get Image Path
   std::string image_base_path;
-  std::string image_left_sub_path;
-  std::string image_right_sub_path;
+  std::string left_sub_image_path;
+  std::string right_sub_image_path;
 
   this->declare_parameter<std::string>("image_base_path", "");
   this->get_parameter("image_base_path", image_base_path);
-  RCLCPP_INFO(this->get_logger(), "\nImage Path = %s", image_base_path.c_str());
+  RCLCPP_INFO(this->get_logger(), "\nImage Base Path = %s",
+              image_base_path.c_str());
 
-  this->declare_parameter<std::string>("image_left_sub_path", "");
-  this->get_parameter("image_left_sub_path", image_left_sub_path);
-  this->declare_parameter<std::string>("image_right_sub_path", "");
-  this->get_parameter("image_right_sub_path", image_right_sub_path);
+  this->declare_parameter<std::string>("left_sub_image_path", "");
+  this->get_parameter("left_sub_image_path", left_sub_image_path);
+  this->declare_parameter<std::string>("right_sub_image_path", "");
+  this->get_parameter("right_sub_image_path", right_sub_image_path);
   RCLCPP_INFO(this->get_logger(), "\nLeft Image Sub Path = %s",
-              image_left_sub_path.c_str());
+              left_sub_image_path.c_str());
   RCLCPP_INFO(this->get_logger(), "\nRight Image Sub Path = %s",
-              image_right_sub_path.c_str());
+              right_sub_image_path.c_str());
 
-  image_left_path_ = image_base_path + image_left_sub_path;
-  image_right_path_ = image_base_path + image_right_sub_path;
+  left_image_path_ = image_base_path + left_sub_image_path;
+  right_image_path_ = image_base_path + right_sub_image_path;
   RCLCPP_INFO(this->get_logger(), "\nLeft Image Path = %s",
-              image_left_path_.c_str());
+              left_image_path_.c_str());
   RCLCPP_INFO(this->get_logger(), "\nRight Image Path = %s",
-              image_right_path_.c_str());
+              right_image_path_.c_str());
 }
 
-std::string *CamNode::GetImages(std::string dir) {
-  std::string *images = new std::string[1000];
-  int image_count = 0;
-
-  for (const auto &entry : fs::directory_iterator(dir)) {
-    RCLCPP_INFO(this->get_logger(), "\nImage Name = %s", entry.path().c_str());
-    *(&images + image_count) = entry.path();
-    if (image_count < 5 - 1) {
-      *images = image_count;
-      RCLCPP_INFO(this->get_logger(), "\nImage Count = %s", *images);
-      break;
-    }
+void CamNode::GetImages(std::string dir, int *file_count,
+                        std::string *file_list) {
+  for (auto const &dir_entry : std::filesystem::directory_iterator{dir}) {
+    // std::cout << dir_entry << '\n';
+    *(file_list + (*file_count)++) = dir_entry.path();
   }
-  return images;
 }

@@ -9,20 +9,19 @@
 
 #include <filesystem>
 #include <iostream>
-#include <typeinfo>
 
 namespace fs = std::filesystem;
 
 class CamNode : public rclcpp::Node {
 public:
   CamNode();
-  std::string* GetImages(std::string dir);
+  void GetImages(std::string dir, int *file_count, std::string *file_list);
 
 private:
   void SysInit();
 
-  std::string image_left_path_;
-  std::string image_right_path_;
+  std::string left_image_path_;
+  std::string right_image_path_;
 };
 
 #endif
