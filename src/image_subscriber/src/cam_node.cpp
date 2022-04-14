@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 CamNode::CamNode() : Node("parameter_node") {
   SysInit();
 
-  int image_count = GetImageNum(left_image_path_);
+  int image_count = GetImageCount(left_image_path_);
   string *left_image_list = new string[image_count];
   string *right_image_list = new string[image_count];
   GetImages(left_image_path_, &image_count, left_image_list);
