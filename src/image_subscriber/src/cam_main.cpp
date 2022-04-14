@@ -1,4 +1,5 @@
 #include "image_subscriber/cam_node.hpp"
+#include "image_subscriber/optical_flow.hpp"
 #include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char* argv[]) {
