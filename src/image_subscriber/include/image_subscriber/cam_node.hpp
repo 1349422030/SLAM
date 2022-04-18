@@ -14,7 +14,11 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include <pangolin/pangolin.h>
+#include <unistd.h>
+
 using namespace std;
+using namespace Eigen;
 
 struct CAMERA_INTRINSIC_PARAMETERS {
   double fx, fy, cx, cy, k1, k2, p1, p2;
@@ -37,6 +41,9 @@ public:
 
   void disp2Depth(cv::Mat disp, cv::Mat &depth,
                   CAMERA_INTRINSIC_PARAMETERS camera);
+
+  void showPointCloud(
+      const vector<Vector4d, Eigen::aligned_allocator<Vector4d>> &pointcloud);
 
 private:
   void SysInit();

@@ -66,7 +66,7 @@ void CamNode::GetImages(string dir, int &image_count, string *image_list) {
 
 void CamNode::StereoDepth(int *image_count, string *left_image_list,
                           string *right_image_list) {
-  cv::Mat left_image, right_image, depth_image, disp;
+  cv::Mat left_image, right_image, depth_image;
 
   CAMERA_INTRINSIC_PARAMETERS left_camera = {
       458.654,
@@ -115,18 +115,58 @@ void CamNode::StereoDepth(int *image_count, string *left_image_list,
   Eigen::Matrix4d T_C1C2 = Eigen::Matrix4d::Zero();
   T_C1C2 = T_BC2.inverse() * T_BC1;
 
-  for (int count = 2400; count < *image_count; count++) {
+  for (int count = 2500; count < *image_count; count++) {
     left_image = cv::imread(*(left_image_list + count), cv::IMREAD_GRAYSCALE);
     right_image = cv::imread(*(right_image_list + count), cv::IMREAD_GRAYSCALE);
 
-    cv::imshow("distort", left_image);
+    // cv::imshow("undistort_left", left_image);
+    // cv::imshow("undistort_right", right_image);
     undistort(left_image, right_image, left_camera, right_camera, T_C1C2);
+    // cv::imshow("distort_left", left_image);
+    // cv::imshow("distort_right", right_image);
 
-    stereoSGBM(left_image, right_image, disp);
-    // disp2Depth(disp, depth_image, camera);
-    cv::imshow("undistort", left_image);
-    cv::imshow("Depth", disp);
-    cv::waitKey(1);
+    stereoSGBM(left_image, right_image, depth_image);
+    // // disp2Depth(disp, depth_image, camera);
+    // cv::imshow("image", left_image);
+    // cv::imshow("depth", disp);
+
+    // 内参c
+    double fx = left_camera.fx;
+    double fy = left_camera.fy;
+    double cx = left_camera.cx;
+    double cy = left_camera.cy;
+    // 基线
+    double b = 0.11;
+
+    // 生成点云
+    vector<Vector4d, Eigen::aligned_allocator<Vector4d>> pointcloud;
+
+    // 如果你的机器慢，请把后面的v++和u++改成v+=2, u+=2
+    for (int v = 0; v < left_image.rows; v++)
+      for (int u = 0; u < left_image.cols; u++) {
+        if (depth_image.at<float>(v, u) <= 0.0 ||
+            depth_image.at<float>(v, u) >= 96.0)
+          continue;
+
+        Vector4d point(0, 0, 0,
+                       left_image.at<uchar>(v, u) /
+                           255.0); // 前三维为xyz,第四维为颜色
+
+        // 根据双目模型计算 point 的位置
+        double x = (u - cx) / fx;
+        double y = (v - cy) / fy;
+        double depth = fx * b / (depth_image.at<float>(v, u));
+        point[0] = x * depth;
+        point[1] = y * depth;
+        point[2] = depth;
+
+        pointcloud.push_back(point);
+      }
+
+    cv::imshow("pointcloud", depth_image / 96.0);
+    cv::waitKey(0);
+    // 画出点云
+    showPointCloud(pointcloud);
   }
 }
 
@@ -166,7 +206,8 @@ void CamNode::undistort(cv::Mat &left_image, cv::Mat &right_image,
   remap(right_image, right_image, map2x, map2y, INTER_LINEAR);
 }
 
-void CamNode::stereoSGBM(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp) {
+void CamNode::stereoSGBM(cv::Mat left_image, cv::Mat right_image,
+                         cv::Mat &disp) {
   disp.create(left_image.rows, left_image.cols, CV_8UC1);
   cv::Mat disp1 = cv::Mat(left_image.rows, left_image.cols, CV_16S);
   cv::Size imgSize = left_image.size();
@@ -196,7 +237,8 @@ void CamNode::stereoSGBM(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp)
   sgbm->setMode(cv::StereoSGBM::MODE_SGBM); //采用全尺寸双通道动态编程算法
   sgbm->compute(left_image, right_image, disp1);
 
-  disp1.convertTo(disp, CV_8U, 255 / (nmDisparities * 16.)); //转8位
+  // disp1.convertTo(disp, CV_8U, 255 / (nmDisparities * 16.)); //转8位
+  disp1.convertTo(disp, CV_32F, 255 / (nmDisparities * 16.));
 }
 
 // void CamNode::disp2Depth(cv::Mat disp, cv::Mat &depth,
@@ -214,3 +256,44 @@ void CamNode::stereoSGBM(cv::Mat left_image, cv::Mat right_image, cv::Mat &disp)
 //   // }
 //   // depth1.convertTo(depth, CV_8U, 1. / 255); //转8位
 // }
+
+void CamNode::showPointCloud(
+    const vector<Vector4d, Eigen::aligned_allocator<Vector4d>> &pointcloud) {
+
+  if (pointcloud.empty()) {
+    cerr << "Point cloud is empty!" << endl;
+    return;
+  }
+
+  pangolin::CreateWindowAndBind("Point Cloud Viewer", 1024, 768);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  pangolin::OpenGlRenderState s_cam(
+      pangolin::ProjectionMatrix(1024, 768, 500, 500, 512, 389, 0.1, 1000),
+      pangolin::ModelViewLookAt(0, -0.1, -1.8, 0, 0, 0, 0.0, -1.0, 0.0));
+
+  pangolin::View &d_cam = pangolin::CreateDisplay()
+                              .SetBounds(0.0, 1.0, pangolin::Attach::Pix(175),
+                                         1.0, -1024.0f / 768.0f)
+                              .SetHandler(new pangolin::Handler3D(s_cam));
+
+  while (pangolin::ShouldQuit() == false) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    d_cam.Activate(s_cam);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    glPointSize(2);
+    glBegin(GL_POINTS);
+    for (auto &p : pointcloud) {
+      glColor3f(p[3], p[3], p[3]);
+      glVertex3d(p[0], p[1], p[2]);
+    }
+    glEnd();
+    pangolin::FinishFrame();
+    usleep(5000); // sleep 5 ms
+  }
+  return;
+}

@@ -27,6 +27,9 @@ find_package(rclcpp_components REQUIRED)
 find_package(OpenCV 4 REQUIRED # PATHS /opt/OpenCV4/ # Path OpenCV installed
 )
 
+set(Pangolin_DIR /home/workspace/Library/Pangolin/build)
+find_package(Pangolin REQUIRED)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights uncomment
@@ -48,7 +51,7 @@ set(node_plugins "")
 # =============
 
 add_library(cam_node SHARED src/cam_node.cpp)
-ament_target_dependencies(cam_node rclcpp OpenCV)
+ament_target_dependencies(cam_node rclcpp OpenCV Pangolin)
 
 add_library(optical_flow SHARED src/optical_flow.cpp)
 ament_target_dependencies(optical_flow rclcpp OpenCV)
