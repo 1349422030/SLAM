@@ -1,25 +1,20 @@
 #include "image_subscriber/optical_flow.hpp"
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
 #include <chrono>
-#include <opencv2/opencv.hpp>
-
-OpticalFlowTracker::OpticalFlowTracker() {}
+#include <list>
 
 void OpticalFlowTracker::SingleLKFlow(int *image_count, string *image_list) {
-  list<cv::Point2f> keypoints; // 因为要删除跟踪失败的点，使用list
-  cv::Mat image, last_image;
+  list<Point2f> keypoints; // 因为要删除跟踪失败的点，使用list
+  Mat image, last_image;
 
   for (int index = 100; index < *image_count; index++) {
     // 读入图像
-    image = cv::imread(*(image_list + index), cv::IMREAD_COLOR);
+    image = imread(*(image_list + index), IMREAD_COLOR);
 
     if (keypoints.size() < 100) {
       // 当特征点过少时重新提取特征点
-      vector<cv::KeyPoint> kps;
-      cv::Ptr<cv::FastFeatureDetector> detector =
-          cv::FastFeatureDetector::create();
+      vector<KeyPoint> kps;
+      Ptr<FastFeatureDetector> detector = FastFeatureDetector::create();
       detector->detect(image, kps);
 
       //记录所有特征点
@@ -29,8 +24,8 @@ void OpticalFlowTracker::SingleLKFlow(int *image_count, string *image_list) {
       continue;
     }
 
-    vector<cv::Point2f> next_keypoints;
-    vector<cv::Point2f> prev_keypoints;
+    vector<Point2f> next_keypoints;
+    vector<Point2f> prev_keypoints;
     for (auto kp : keypoints)
       prev_keypoints.push_back(kp);
     vector<unsigned char> status;
@@ -39,8 +34,8 @@ void OpticalFlowTracker::SingleLKFlow(int *image_count, string *image_list) {
 
     //调用OpenCV官方LK算法并计时
     chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-    cv::calcOpticalFlowPyrLK(last_image, image, prev_keypoints, next_keypoints,
-                             status, error);
+    calcOpticalFlowPyrLK(last_image, image, prev_keypoints, next_keypoints,
+                         status, error);
     chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
     chrono::duration<double> time_used =
         chrono::duration_cast<chrono::duration<double>>(t2 - t1);
@@ -63,11 +58,11 @@ void OpticalFlowTracker::SingleLKFlow(int *image_count, string *image_list) {
       break;
     }
 
-    cv::Mat img_show = image.clone();
+    Mat img_show = image.clone();
     for (auto kp : keypoints)
-      cv::circle(img_show, kp, 10, cv::Scalar(0, 240, 0), 1);
-    cv::imshow("corners", img_show);
-    cv::waitKey(1);
+      circle(img_show, kp, 10, Scalar(0, 240, 0), 1);
+    imshow("corners", img_show);
+    waitKey(1);
     last_image = image;
   }
 }
